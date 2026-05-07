@@ -13,14 +13,15 @@ export function createClient() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
-          } catch (error) {
-            console.error("Error setting cookies:", error);
-          }
-        },
+  try {
+    cookiesToSet.forEach(({ name, value, options }) => {
+      cookieStore.set(name, value, options);
+    });
+  } catch (error) {
+    console.error("Error setting cookies:", error);
+  }
+}
+,
       },
     }
   );
@@ -34,13 +35,16 @@ export function createServerSupabaseClient() {
     {
       cookies: {
         getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {}
-        }
+        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+  try {
+    cookiesToSet.forEach(({ name, value, options }) => {
+      cookieStore.set(name, value, options);
+    });
+  } catch (error) {
+    console.error("Error setting cookies:", error);
+  }
+}
+
       }
     }
   )
