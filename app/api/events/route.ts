@@ -86,3 +86,28 @@ export async function DELETE(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
+
+export async function PATCH(req: NextRequest) {
+  const meta = await getMeta(req)
+  if (!meta) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+  if (!id) return NextResponse.json({ error: 'ID mancante' }, { status: 400 })
+
+  const body = await req.json()
+  const service = createServiceClient()
+
+  const { data, error } = await service.from('events').update({
+    title: body.title,
+    date: body.date,
+    time: body.time || null,
+    category: body.category,
+    note: body.note || null,
+    is_family: body.is_family,
+    profile_id: body.profile_id,
+  }).eq('id', id).eq('family_id', meta.family_id).select().single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ event: data })
+}
