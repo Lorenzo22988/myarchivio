@@ -1,8 +1,9 @@
-import { createServerClient, type CookieMethodsServer } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
-// Client con sessione utente (legge i cookie auth)
+type CookieToSet = { name: string; value: string; options?: Record<string, unknown> }
+
 export function createServerSupabaseClient() {
   const cookieStore = cookies()
   return createServerClient(
@@ -11,10 +12,10 @@ export function createServerSupabaseClient() {
     {
       cookies: {
         getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet: Parameters<CookieMethodsServer['setAll']>[0]) {
+        setAll(cookiesToSet: CookieToSet[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, options as never)
             )
           } catch {}
         }
@@ -24,7 +25,6 @@ export function createServerSupabaseClient() {
 }
 
 // Client con service role — bypassa RLS, NON usa cookies
-// Usarlo solo nelle API route lato server
 export function createServiceClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
