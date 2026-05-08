@@ -51,6 +51,7 @@ export interface Document {
   is_family: boolean
   created_at: string
   profile?: Profile
+  signed_url?: string
 }
 
 export const CAT_CONFIG: Record<EventCategory, { label: string; colorClass: string; badgeClass: string }> = {
