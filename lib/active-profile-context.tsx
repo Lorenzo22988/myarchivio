@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, ReactNode } from 'react'
 import { Profile } from '@/lib/types'
 
 interface ActiveProfileCtx {
@@ -8,6 +8,8 @@ interface ActiveProfileCtx {
   profiles: Profile[]
   setProfiles: (p: Profile[]) => void
   isAdmin: boolean
+  // Helper per fare fetch autenticata (funziona sia per admin che per membri PIN)
+  authFetch: (url: string, init?: RequestInit) => Promise<Response>
 }
 
 const Ctx = createContext<ActiveProfileCtx>({
@@ -16,23 +18,28 @@ const Ctx = createContext<ActiveProfileCtx>({
   profiles: [],
   setProfiles: () => {},
   isAdmin: false,
+  authFetch: (url, init) => fetch(url, init),
 })
 
 export function ActiveProfileProvider({ children }: { children: ReactNode }) {
   const [activeProfile, setActiveProfileState] = useState<Profile | null>(null)
   const [profiles, setProfiles] = useState<Profile[]>([])
 
-  useEffect(() => {
-    const saved = sessionStorage.getItem('activeProfileId')
-    if (saved && profiles.length > 0) {
-      const p = profiles.find(p => p.id === saved)
-      if (p) setActiveProfileState(p)
-    }
-  }, [profiles])
-
   const setActiveProfile = (p: Profile) => {
     setActiveProfileState(p)
-    sessionStorage.setItem('activeProfileId', p.id)
+    if (p.role === 'membro') {
+      sessionStorage.setItem('memberProfile', JSON.stringify(p))
+    }
+  }
+
+  // Aggiunge automaticamente X-Profile-Id per i membri senza sessione Supabase
+  const authFetch = (url: string, init: RequestInit = {}): Promise<Response> => {
+    if (activeProfile?.role === 'membro') {
+      const headers = new Headers(init.headers || {})
+      headers.set('X-Profile-Id', activeProfile.id)
+      return fetch(url, { ...init, headers })
+    }
+    return fetch(url, init)
   }
 
   return (
@@ -42,6 +49,7 @@ export function ActiveProfileProvider({ children }: { children: ReactNode }) {
       profiles,
       setProfiles,
       isAdmin: activeProfile?.role === 'admin',
+      authFetch,
     }}>
       {children}
     </Ctx.Provider>

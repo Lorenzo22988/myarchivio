@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Event, Document, CAT_CONFIG, DOC_TYPE_LABELS } from '@/lib/types'
+import { useActiveProfile } from '@/lib/active-profile-context'
 
 function fmt(d: string) { const p = d.split('-'); return `${p[2]}/${p[1]}/${p[0]}` }
 function hl(text: string, q: string) {
@@ -10,6 +11,7 @@ function hl(text: string, q: string) {
 }
 
 export default function SearchPage() {
+  const { authFetch } = useActiveProfile()
   const [q, setQ] = useState('')
   const [events, setEvents] = useState<Event[]>([])
   const [docs, setDocs] = useState<Document[]>([])
@@ -21,8 +23,8 @@ export default function SearchPage() {
     if (!q.trim()) return
     setLoading(true)
     const [evRes, docRes] = await Promise.all([
-      fetch('/api/events'),
-      fetch(`/api/documents?q=${encodeURIComponent(q)}`),
+      authFetch('/api/events'),
+      authFetch(`/api/documents?q=${encodeURIComponent(q)}`),
     ])
     const evData = await evRes.json()
     const docData = await docRes.json()

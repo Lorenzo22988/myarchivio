@@ -1,20 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase-server'
 
-async function getFamilyId(userId: string) {
+// Restituisce meta (family_id, id, role) sia per admin (cookie Supabase)
+// sia per membri con PIN (header X-Profile-Id)
+async function getMeta(req: NextRequest) {
   const service = createServiceClient()
-  const { data } = await service.from('profiles')
-    .select('family_id,id,role').eq('supabase_user_id', userId).single()
-  return data
+
+  // 1. Prova sessione admin via cookie
+  const supabase = createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data } = await service.from('profiles')
+      .select('family_id,id,role').eq('supabase_user_id', user.id).single()
+    return data
+  }
+
+  // 2. Prova accesso membro via header (PIN login)
+  const profileId = req.headers.get('X-Profile-Id')
+  if (profileId) {
+    const { data } = await service.from('profiles')
+      .select('family_id,id,role').eq('id', profileId).single()
+    return data
+  }
+
+  return null
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
-
-  const meta = await getFamilyId(user.id)
-  if (!meta) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+  const meta = await getMeta(req)
+  if (!meta) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
 
   const service = createServiceClient()
   const { searchParams } = new URL(req.url)
@@ -25,14 +39,10 @@ export async function GET(req: NextRequest) {
     .eq('family_id', meta.family_id)
     .order('date', { ascending: false })
 
-  // Se non admin, filtra: propri + family
   if (meta.role !== 'admin') {
     query = query.or(`profile_id.eq.${meta.id},is_family.eq.true`)
   }
-
-  if (profileFilter) {
-    query = query.eq('profile_id', profileFilter)
-  }
+  if (profileFilter) query = query.eq('profile_id', profileFilter)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -40,12 +50,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
-
-  const meta = await getFamilyId(user.id)
-  if (!meta) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+  const meta = await getMeta(req)
+  if (!meta) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
 
   const body = await req.json()
   const service = createServiceClient()
@@ -66,12 +72,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const supabase = createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
-
-  const meta = await getFamilyId(user.id)
-  if (!meta) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 })
+  const meta = await getMeta(req)
+  if (!meta) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')

@@ -8,7 +8,7 @@ const DAYS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
 const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
 
 export default function DashboardPage() {
-  const { activeProfile, isAdmin, profiles } = useActiveProfile()
+  const { activeProfile, isAdmin, profiles, authFetch } = useActiveProfile()
   const [year, setYear] = useState(new Date().getFullYear())
   const [month, setMonth] = useState(new Date().getMonth())
   const [events, setEvents] = useState<Event[]>([])
@@ -16,7 +16,7 @@ export default function DashboardPage() {
   const [calFilter, setCalFilter] = useState<'all' | 'mine'>('all')
 
   const loadEvents = useCallback(async () => {
-    const res = await fetch('/api/events')
+    const res = await authFetch('/api/events')
     const data = await res.json()
     if (data.events) setEvents(data.events)
   }, [])

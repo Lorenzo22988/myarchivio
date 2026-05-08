@@ -14,7 +14,7 @@ const DOC_ICONS: Record<string, string> = {
 }
 
 export default function ArchivePage() {
-  const { activeProfile, isAdmin, profiles } = useActiveProfile()
+  const { activeProfile, isAdmin, profiles, authFetch } = useActiveProfile()
   const [docs, setDocs] = useState<Document[]>([])
   const [typeFilter, setTypeFilter] = useState('all')
   const [profileFilter, setProfileFilter] = useState('all')
@@ -31,7 +31,7 @@ export default function ArchivePage() {
     let url = '/api/documents?'
     if (typeFilter !== 'all') url += `doc_type=${typeFilter}&`
     if (profileFilter !== 'all') url += `profile_id=${profileFilter}&`
-    const res = await fetch(url)
+    const res = await authFetch(url)
     const data = await res.json()
     if (data.documents) setDocs(data.documents)
   }, [typeFilter, profileFilter])
@@ -49,14 +49,14 @@ export default function ArchivePage() {
     fd.append('doc_type', uploadType)
     fd.append('profile_id', uploadProfile || activeProfile?.id || '')
     fd.append('is_family', String(uploadFamily))
-    const res = await fetch('/api/documents', { method: 'POST', body: fd })
+    const res = await authFetch('/api/documents', { method: 'POST', body: fd })
     setUploading(false)
     if (res.ok) { setShowUpload(false); setSelectedFile(null); setUploadName(''); load() }
   }
 
   async function deleteDoc(id: string) {
     if (!confirm('Eliminare questo documento?')) return
-    await fetch(`/api/documents?id=${id}`, { method: 'DELETE' })
+    await authFetch(`/api/documents?id=${id}`, { method: 'DELETE' })
     load()
   }
 

@@ -1,16 +1,18 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { Event } from '@/lib/types'
+import { useActiveProfile } from '@/lib/active-profile-context'
 
 function fmt(d: string) { const p = d.split('-'); return `${p[2]}/${p[1]}/${p[0]}` }
 
 export default function ComparePage() {
+  const { authFetch } = useActiveProfile()
   const [events, setEvents] = useState<Event[]>([])
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState('')
 
   const load = useCallback(async () => {
-    const res = await fetch('/api/events')
+    const res = await authFetch('/api/events')
     const data = await res.json()
     if (data.events) setEvents(data.events)
   }, [])

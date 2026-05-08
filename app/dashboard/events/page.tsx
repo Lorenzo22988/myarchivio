@@ -7,13 +7,13 @@ import EventModal from '@/components/EventModal'
 function fmt(d: string) { const p = d.split('-'); return `${p[2]}/${p[1]}/${p[0]}` }
 
 export default function EventsPage() {
-  const { activeProfile, isAdmin, profiles } = useActiveProfile()
+  const { activeProfile, isAdmin, profiles, authFetch } = useActiveProfile()
   const [events, setEvents] = useState<Event[]>([])
   const [showModal, setShowModal] = useState(false)
   const [filter, setFilter] = useState<string>('all')
 
   const load = useCallback(async () => {
-    const res = await fetch('/api/events')
+    const res = await authFetch('/api/events')
     const data = await res.json()
     if (data.events) setEvents(data.events)
   }, [])
@@ -22,7 +22,7 @@ export default function EventsPage() {
 
   async function deleteEvent(id: string) {
     if (!confirm('Eliminare questo evento?')) return
-    await fetch(`/api/events?id=${id}`, { method: 'DELETE' })
+    await authFetch(`/api/events?id=${id}`, { method: 'DELETE' })
     load()
   }
 
